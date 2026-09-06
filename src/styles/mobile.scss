@@ -1,0 +1,423 @@
+﻿/**
+ * Summit OKR 移动端全局样式
+ * 主题方案：页面根节点 :class="app.themeClass"（theme-blue/green/purple/macos + dark + compact-mode）
+ * 所有颜色走 CSS 变量，小程序端不支持 CSS var 的组件用 var() 兜底写法
+ * 设计 token 与 Taro/Flutter 端统一设计系统对齐（--summit-*），圆角按 750 稿 rpx 等值对应
+ */
+
+// ============ 设计 token（默认浅色） ============
+.page-root {
+  --summit-primary: #409eff;
+  --summit-primary-light: #ecf5ff;
+  --summit-success: #22c55e;
+  --summit-warning: #f59e0b;
+  --summit-danger: #ef4444;
+  --summit-info: #909399;
+
+  --summit-bg: #f5f6f7;
+  --summit-card: #ffffff;
+  --summit-text: #1f2329;
+  --summit-text-secondary: #646a73;
+  --summit-text-placeholder: #a8abb2;
+  --summit-border: #e5e7eb;
+  --summit-fill: #f2f3f5;
+  --summit-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+
+  min-height: 100vh;
+  background-color: var(--summit-bg);
+  color: var(--summit-text);
+  font-size: 28rpx;
+  line-height: 1.6;
+  transition: background-color 0.25s ease;
+}
+
+// ============ 配色主题（仅覆盖 primary 及浅色衍生） ============
+.page-root.theme-blue {
+  --wot-color-theme: #1a73e8;
+  --summit-primary: #1a73e8;
+  --summit-primary-light: #e8f1fd;
+  --summit-bg: #f0f5ff;
+}
+
+.page-root.theme-green {
+  --wot-color-theme: #2e7d32;
+  --summit-primary: #2e7d32;
+  --summit-primary-light: #e9efe2;
+  --summit-bg: #f1f8f1;
+}
+
+.page-root.theme-purple {
+  --wot-color-theme: #7c3aed;
+  --summit-primary: #7c3aed;
+  --summit-primary-light: #f3e8fe;
+  --summit-bg: #f5f0fb;
+}
+
+// ============ macOS 主题（Apple Liquid Glass · 系统蓝） ============
+.page-root.theme-macos {
+  // Apple 系统色板（覆盖默认语义色）
+  --summit-primary: #007AFF;
+  --summit-primary-light: #e6f2ff;
+  --summit-success: #34C759;
+  --summit-warning: #FF9F0A;
+  --summit-danger: #FF3B30;
+  --summit-bg: #f2f4f8;
+  --summit-card: rgba(255, 255, 255, 0.78);
+  --summit-text: rgba(0, 0, 0, 0.85);
+  --summit-text-secondary: rgba(0, 0, 0, 0.55);
+  --summit-text-placeholder: rgba(0, 0, 0, 0.25);
+  --summit-border: rgba(0, 0, 0, 0.08);
+  --summit-fill: rgba(0, 0, 0, 0.045);
+  --summit-shadow: 0 4px 20px rgba(0, 0, 0, 0.07);
+
+  // Apple 系统字体栈 + 收紧字距
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+
+  // wot-design-uni 组件主题色同步为 Apple 系统蓝
+  --wot-color-theme: #007AFF;
+
+  // Aurora 光斑壁纸（对齐 Web 端 theme-macos body 背景）
+  background-image:
+    radial-gradient(52rem 34rem at 8% -6%, rgba(120, 170, 255, 0.5), transparent 60%),
+    radial-gradient(46rem 32rem at 92% 12%, rgba(255, 190, 230, 0.42), transparent 62%),
+    radial-gradient(50rem 36rem at 70% 105%, rgba(160, 230, 220, 0.4), transparent 60%),
+    radial-gradient(40rem 28rem at 22% 88%, rgba(255, 220, 170, 0.35), transparent 62%),
+    linear-gradient(120deg, #eef3fb 0%, #f3eef8 45%, #eef6f6 100%);
+  background-attachment: fixed;
+
+  // 磨砂玻璃卡片：半透明 + 白描边 + 背景模糊
+  .summit-card {
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 40rpx;
+    backdrop-filter: blur(20px);
+  }
+
+  // 按钮：加大圆角、加粗字重、系统蓝辉光
+  .summit-btn {
+    border-radius: 28rpx;
+    font-weight: 600;
+    box-shadow: 0 4px 14px rgba(0, 122, 255, 0.35);
+
+    &.btn-plain {
+      box-shadow: none;
+    }
+  }
+
+  .fab {
+    box-shadow: 0 8px 24px rgba(0, 122, 255, 0.4);
+  }
+
+  // 标签：胶囊形
+  .summit-tag {
+    border-radius: 999rpx;
+  }
+
+  // 进度条轨道
+  .summit-progress {
+    background: rgba(0, 0, 0, 0.06);
+  }
+}
+
+.page-root.theme-macos.dark {
+  --wot-color-theme: #0A84FF;
+  --summit-primary: #0A84FF;
+  --summit-primary-light: rgba(10, 132, 255, 0.18);
+  --summit-bg: #1c1c1e;
+  --summit-card: rgba(255, 255, 255, 0.08);
+  --summit-text: rgba(255, 255, 255, 0.87);
+  --summit-text-secondary: rgba(255, 255, 255, 0.55);
+  --summit-text-placeholder: rgba(255, 255, 255, 0.25);
+  --summit-border: rgba(255, 255, 255, 0.12);
+  --summit-fill: rgba(255, 255, 255, 0.08);
+  --summit-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+
+  // 深色 Aurora 壁纸
+  background-image:
+    radial-gradient(52rem 34rem at 8% -6%, rgba(40, 90, 180, 0.35), transparent 60%),
+    radial-gradient(46rem 32rem at 92% 12%, rgba(150, 60, 130, 0.28), transparent 62%),
+    radial-gradient(50rem 36rem at 70% 105%, rgba(40, 120, 115, 0.28), transparent 60%),
+    linear-gradient(120deg, #0b0d14 0%, #131022 45%, #0d1418 100%);
+
+  .summit-card {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .summit-progress {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .summit-btn {
+    box-shadow: 0 4px 14px rgba(10, 132, 255, 0.4);
+  }
+}
+
+// H5 端文本选区色（Liquid Glass 蓝）
+/* #ifdef H5 */
+.page-root.theme-macos ::selection {
+  background: rgba(0, 122, 255, 0.22);
+}
+/* #endif */
+
+// ============ 夜间外观 ============
+.page-root.dark {
+  --summit-primary-light: rgba(64, 158, 255, 0.16);
+  --summit-bg: #16181c;
+  --summit-card: #212327;
+  --summit-text: rgba(255, 255, 255, 0.87);
+  --summit-text-secondary: rgba(255, 255, 255, 0.55);
+  --summit-text-placeholder: rgba(255, 255, 255, 0.35);
+  --summit-border: #33363b;
+  --summit-fill: rgba(255, 255, 255, 0.08);
+  --summit-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+}
+
+.page-root.dark.theme-blue {
+  --summit-primary: #5e9ff5;
+}
+.page-root.dark.theme-green {
+  --summit-primary: #66bb6a;
+}
+.page-root.dark.theme-purple {
+  --summit-primary: #a06ef5;
+}
+
+// ============ 紧凑模式 ============
+.page-root.compact-mode {
+  font-size: 26rpx;
+  .summit-card {
+    padding: 20rpx;
+    margin-bottom: 16rpx;
+  }
+  .page-title {
+    font-size: 36rpx;
+  }
+  .list-row {
+    padding: 16rpx 0;
+  }
+}
+
+// ============ 通用布局 ============
+.page-container {
+  padding: 24rpx;
+  padding-bottom: calc(48rpx + env(safe-area-inset-bottom));
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+}
+
+.page-title {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: var(--summit-text);
+}
+
+.summit-card {
+  background: var(--summit-card);
+  border: 1px solid var(--summit-border);
+  border-radius: 32rpx;
+  padding: 28rpx;
+  margin-bottom: 24rpx;
+  box-shadow: var(--summit-shadow);
+}
+
+.card-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--summit-text);
+  margin-bottom: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.text-secondary {
+  color: var(--summit-text-secondary);
+}
+
+.text-placeholder {
+  color: var(--summit-text-placeholder);
+}
+
+.text-primary-color {
+  color: var(--summit-primary);
+}
+
+.text-danger {
+  color: var(--summit-danger);
+}
+
+.text-success {
+  color: var(--summit-success);
+}
+
+.text-small {
+  font-size: 24rpx;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+}
+
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flex-1 {
+  flex: 1;
+  min-width: 0;
+}
+
+// 标签（统一胶囊形）
+.summit-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4rpx 16rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  background: var(--summit-fill);
+  color: var(--summit-text-secondary);
+
+  &.tag-primary {
+    background: var(--summit-primary-light);
+    color: var(--summit-primary);
+  }
+  &.tag-success {
+    background: rgba(34, 197, 94, 0.12);
+    color: var(--summit-success);
+  }
+  &.tag-warning {
+    background: rgba(245, 158, 11, 0.12);
+    color: var(--summit-warning);
+  }
+  &.tag-danger {
+    background: rgba(239, 68, 68, 0.12);
+    color: var(--summit-danger);
+  }
+}
+
+// 进度条
+.summit-progress {
+  height: 12rpx;
+  border-radius: 999rpx;
+  background: var(--summit-border);
+  overflow: hidden;
+
+  .summit-progress-inner {
+    height: 100%;
+    border-radius: 999rpx;
+    background: var(--summit-primary);
+    transition: width 0.3s ease;
+  }
+}
+
+// 空状态
+.summit-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 140rpx 40rpx;
+  color: var(--summit-text-placeholder);
+
+  .empty-icon {
+    font-size: 88rpx;
+    margin-bottom: 28rpx;
+    opacity: 0.5;
+  }
+  .empty-text {
+    font-size: 26rpx;
+  }
+}
+
+// 列表行
+.list-row {
+  display: flex;
+  align-items: center;
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid var(--summit-border);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+// 主按钮（页面内联用，简单场景）
+.summit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 72rpx;
+  padding: 0 32rpx;
+  border-radius: 24rpx;
+  font-size: 28rpx;
+  background: var(--summit-primary);
+  color: #fff;
+  transition: opacity 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+
+  &:active {
+    opacity: 0.85;
+    transform: scale(0.98);
+  }
+  &.btn-plain {
+    background: transparent;
+    color: var(--summit-primary);
+    border: 1rpx solid var(--summit-primary);
+  }
+  &.btn-danger {
+    background: var(--summit-danger);
+  }
+  &.btn-small {
+    height: 56rpx;
+    font-size: 24rpx;
+    padding: 0 20rpx;
+  }
+}
+
+// 悬浮添加按钮
+.fab {
+  position: fixed;
+  right: 40rpx;
+  bottom: calc(140rpx + env(safe-area-inset-bottom));
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50%;
+  background: var(--summit-primary);
+  color: #fff;
+  font-size: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6rpx 24rpx rgba(0, 0, 0, 0.2);
+  z-index: 99;
+}
+
+// 弹层表单
+.popup-form {
+  padding: 32rpx;
+
+  .popup-title {
+    font-size: 32rpx;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 32rpx;
+    color: var(--summit-text);
+  }
+  .form-item {
+    margin-bottom: 28rpx;
+  }
+  .form-label {
+    font-size: 26rpx;
+    color: var(--summit-text-secondary);
+    margin-bottom: 12rpx;
+    display: block;
+  }
+}
+
+

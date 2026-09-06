@@ -1,0 +1,86 @@
+{
+  "easycom": {
+    "autoscan": true,
+    "custom": {
+      "^wd-(.*)": "wot-design-uni/components/wd-$1/wd-$1.vue",
+      "^uni-echarts$": "uni-echarts/components/uni-echarts/uni-echarts.vue",
+      "^summit-(.*)": "@/components/summit-$1/summit-$1.vue"
+    }
+  },
+  "pages": [
+    {
+      "path": "pages/auth/login",
+      "style": { "navigationStyle": "custom" }
+    },
+    {
+      "path": "pages/auth/register",
+      "style": { "navigationStyle": "custom" }
+    },
+    {
+      "path": "pages/summary/summary",
+      "style": { "navigationBarTitleText": "摘要", "enablePullDownRefresh": true }
+    },
+    {
+      "path": "pages/goals/goals",
+      "style": { "navigationBarTitleText": "目标库", "enablePullDownRefresh": true }
+    },
+    {
+      "path": "pages/tasks/tasks",
+      "style": { "navigationBarTitleText": "任务" }
+    },
+    {
+      "path": "pages/profile/profile",
+      "style": { "navigationBarTitleText": "我的" }
+    },
+    {
+      "path": "pages/goals/objective-detail",
+      "style": { "navigationBarTitleText": "目标详情" }
+    },
+    {
+      "path": "pages/focus/focus",
+      "style": { "navigationBarTitleText": "专注周期" }
+    },
+    {
+      "path": "pages/reviews/reviews",
+      "style": { "navigationBarTitleText": "复盘" }
+    },
+    {
+      "path": "pages/visions/visions",
+      "style": { "navigationBarTitleText": "愿景" }
+    },
+    {
+      "path": "pages/gantt/gantt",
+      "style": { "navigationBarTitleText": "甘特图" }
+    },
+    {
+      "path": "pages/ai/ai-assistant",
+      "style": { "navigationBarTitleText": "AI 助手" }
+    },
+    {
+      "path": "pages/recycle/recycle",
+      "style": { "navigationBarTitleText": "回收站" }
+    },
+    {
+      "path": "pages/help/help",
+      "style": { "navigationBarTitleText": "帮助与反馈" }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "Summit OKR",
+    "navigationBarBackgroundColor": "#ffffff",
+    "backgroundColor": "#f5f6f7"
+  },
+  "tabBar": {
+    "color": "#8a8a8a",
+    "selectedColor": "#409eff",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      { "pagePath": "pages/summary/summary", "text": "摘要", "iconPath": "static/tabbar/summary.png", "selectedIconPath": "static/tabbar/summary-active.png" },
+      { "pagePath": "pages/goals/goals", "text": "目标库", "iconPath": "static/tabbar/goals.png", "selectedIconPath": "static/tabbar/goals-active.png" },
+      { "pagePath": "pages/tasks/tasks", "text": "任务", "iconPath": "static/tabbar/tasks.png", "selectedIconPath": "static/tabbar/tasks-active.png" },
+      { "pagePath": "pages/profile/profile", "text": "我的", "iconPath": "static/tabbar/profile.png", "selectedIconPath": "static/tabbar/profile-active.png" }
+    ]
+  }
+}
