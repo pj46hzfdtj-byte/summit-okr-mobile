@@ -7,7 +7,17 @@
           <text class="summit-tag" :class="statusTagClass">{{ statusLabel[objective.status] }}</text>
           <text v-if="objective.isLagging" class="summit-tag tag-danger">滞后</text>
         </view>
-        <view class="row" style="gap: 12rpx; margin-bottom: 20rpx">
+        <view class="row" style="gap: 16rpx; margin-bottom: 20rpx">
+          <!-- VisOKR 风格：完成度圆环 -->
+          <view class="obj-ring">
+            <view
+              class="obj-ring__fill"
+              :style="{ background: `conic-gradient(${objective.color || 'var(--summit-primary)'} ${progressPct * 3.6}deg, var(--summit-bg, #f5f5f5) 0deg)` }"
+            />
+            <view class="obj-ring__inner">
+              <text class="obj-ring__value">{{ progressPct }}<text class="obj-ring__unit">%</text></text>
+            </view>
+          </view>
           <view class="color-dot" :style="{ background: objective.color }" />
           <text class="obj-title-text">{{ objective.title }}</text>
         </view>
@@ -345,6 +355,8 @@ const statusTagClass = computed(() => {
 });
 
 const objectiveEditable = computed(() => objective.value && objective.value.status !== 'completed');
+
+const progressPct = computed(() => Math.round((objective.value?.currentProgress ?? 0) * 100));
 
 async function loadData() {
   loading.value = true;
@@ -701,6 +713,37 @@ watch(memoDialogVisible, (v) => {
 </script>
 
 <style scoped lang="scss">
+.obj-ring {
+  position: relative;
+  width: 168rpx;
+  height: 168rpx;
+  flex-shrink: 0;
+}
+.obj-ring__fill {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+.obj-ring__inner {
+  position: absolute;
+  inset: 20rpx;
+  border-radius: 50%;
+  background: var(--summit-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.obj-ring__value {
+  font-size: 52rpx;
+  font-weight: 800;
+  color: var(--summit-text);
+}
+.obj-ring__unit {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--summit-text-secondary);
+}
+
 .obj-title-text {
   font-size: 34rpx;
   font-weight: 700;

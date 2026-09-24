@@ -28,9 +28,14 @@
           <text class="text-secondary text-small">{{ dayjs(r.createdAt).format('YYYY-MM-DD HH:mm') }}</text>
         </view>
 
-        <view class="row" style="gap: 12rpx; flex-wrap: wrap; margin-bottom: 16rpx">
-          <text class="score-badge" :class="scoreClass(r.selfRating)">自评 {{ Math.round((r.selfRating ?? 0) * 100) }}</text>
-          <text v-if="r.objectiveScore != null" class="score-badge score-badge--obj">目标 {{ r.objectiveScore }}</text>
+        <!-- VisOKR 风格：大分数 + emoji 自评 -->
+        <view class="review-hero" :class="scoreClass(r.selfRating)">
+          <text class="hero-emoji">{{ selfEmoji(r.selfRating).emoji }}</text>
+          <text class="hero-value">{{ Math.round((r.selfRating ?? 0) * 100) }}</text>
+          <view class="hero-meta">
+            <text class="hero-label">自评 · {{ selfEmoji(r.selfRating).label }}</text>
+            <text v-if="r.objectiveScore != null" class="hero-sub">目标得分 {{ r.objectiveScore }}</text>
+          </view>
         </view>
 
         <!-- KR 评分明细 -->
@@ -210,6 +215,22 @@ function scoreClass(rating: number | null | undefined): string {
   if (v >= 0.7) return 'score-badge--success';
   if (v >= 0.4) return 'score-badge--warning';
   return 'score-badge--danger';
+}
+
+// VisOKR 风格：自评 emoji
+const SELF_EMOJIS = [
+  { emoji: '😣', label: '很不理想', min: 0 },
+  { emoji: '😕', label: '不太满意', min: 40 },
+  { emoji: '🙂', label: '还不错', min: 60 },
+  { emoji: '😊', label: '很满意', min: 70 },
+  { emoji: '🤩', label: '太棒了', min: 90 },
+];
+
+function selfEmoji(rating: number | null | undefined) {
+  const v = Math.round((rating ?? 0) * 100);
+  let cur = SELF_EMOJIS[0];
+  for (const e of SELF_EMOJIS) if (v >= e.min) cur = e;
+  return cur;
 }
 
 function scoreBarColor(score: number): string {
@@ -393,6 +414,23 @@ function handleDelete(r: Review) {
 .score-badge--warning { background: rgba(245, 158, 11, 0.15); color: var(--summit-warning); }
 .score-badge--danger { background: rgba(239, 68, 68, 0.15); color: var(--summit-danger); }
 .score-badge--obj { background: var(--summit-primary-light); color: var(--summit-primary); }
+
+/* VisOKR 风格：大分数 + emoji */
+.review-hero {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 8rpx 28rpx;
+  border-radius: 16rpx;
+  margin-bottom: 16rpx;
+  align-self: flex-start;
+  width: fit-content;
+}
+.review-hero .hero-emoji { font-size: 52rpx; line-height: 1; }
+.review-hero .hero-value { font-size: 60rpx; font-weight: 800; line-height: 1; }
+.review-hero .hero-meta { display: flex; flex-direction: column; gap: 4rpx; }
+.review-hero .hero-label { font-size: 22rpx; font-weight: 600; }
+.review-hero .hero-sub { font-size: 22rpx; opacity: 0.8; }
 
 .kr-scores {
   display: flex;

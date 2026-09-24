@@ -1,6 +1,20 @@
 <template>
   <summit-page>
     <view class="page-container">
+      <!-- VisOKR 风格统计行 -->
+      <view class="stat-row">
+        <view
+          v-for="st in statRow"
+          :key="st.key"
+          class="stat-item"
+          @click="st.key === 'tasks' ? goTasks() : undefined"
+        >
+          <text class="stat-emoji" :style="{ color: st.color }">{{ st.emoji }}</text>
+          <text class="stat-value">{{ getStatValue(st.key) }}</text>
+          <text class="stat-label">{{ st.label }}</text>
+        </view>
+      </view>
+
       <!-- KPI 四宫格 -->
       <view class="kpi-grid">
         <view v-for="kpi in kpiCards" :key="kpi.key" class="kpi-card">
@@ -59,42 +73,77 @@
         </wd-button>
       </view>
 
-      <!-- 活跃专注周期 -->
-      <view v-if="summary?.activeFocusCycle" class="summit-card">
+      <!-- 活跃专注周期（VisOKR 圆环 + KR chips） -->
+      <view v-if="summary?.activeFocusCycle" class="summit-card cycle-card">
         <view class="card-title">
-          <text>🎯 活跃专注周期</text>
+          <text class="flex-1 cycle-name" @click="goFocus">🎯 {{ summary.activeFocusCycle.name }}</text>
           <text class="text-primary-color text-small" @click="goFocus">管理 ›</text>
         </view>
-        <view class="row-between" style="margin-bottom: 16rpx">
-          <view>
-            <text class="cycle-name">{{ summary.activeFocusCycle.name }}</text>
-            <view class="cycle-period text-secondary text-small">
-              {{ dayjs(summary.activeFocusCycle.startAt).format('MM/DD') }} →
-              {{ dayjs(summary.activeFocusCycle.endAt).format('MM/DD') }}
+        <view class="cycle-period">
+          {{ dayjs(summary.activeFocusCycle.startAt).format('MM/DD') }} →
+          {{ dayjs(summary.activeFocusCycle.endAt).format('MM/DD') }}
+          <text
+            v-if="summary.cycleDaysRemaining != null"
+            class="cycle-days"
+            :class="{ 'is-urgent': (summary.cycleDaysRemaining ?? 0) <= 7 }"
+          >剩余 {{ summary.cycleDaysRemaining }} 天</text>
+        </view>
+
+        <view class="cycle-body">
+          <!-- 圆环 -->
+          <view class="cycle-ring">
+            <view class="cycle-ring__track" />
+            <view class="cycle-ring__fill" :style="{ background: `conic-gradient(var(--summit-primary) ${cycleScore}%, transparent 0)` }" />
+            <view class="cycle-ring__inner">
+              <text class="cycle-ring__value">{{ cycleScore }}<text class="cycle-ring__unit">%</text></text>
+              <text class="cycle-ring__label">周期进度</text>
             </view>
           </view>
-          <view class="cycle-score-block">
-            <text class="text-secondary text-small">周期得分</text>
-            <text class="cycle-score-value">{{ summary.activeFocusCycle.cycleScore ?? 0 }}</text>
+          <!-- 侧栏统计 -->
+          <view class="cycle-side">
+            <view class="cycle-side-item">
+              <text class="cycle-side-value">{{ todayDelta }}<text class="cycle-side-unit">%</text></text>
+              <text class="cycle-side-label">今日增加进度</text>
+            </view>
+            <view class="cycle-side-item">
+              <text class="cycle-side-value">{{ summary.activeFocusCycle.objectives.length }}<text class="cycle-side-unit">个</text></text>
+              <text class="cycle-side-label">进行中目标</text>
+            </view>
           </view>
         </view>
-        <view class="summit-progress" style="margin-bottom: 16rpx">
-          <view class="summit-progress-inner" :style="{ width: (summary.activeFocusCycle.cycleScore ?? 0) + '%' }" />
-        </view>
-        <view v-for="oco in summary.activeFocusCycle.objectives" :key="oco.objectiveId" class="list-row">
-          <view class="status-dot" :style="{ background: oco.objective?.color || 'var(--summit-primary)' }" />
-          <text class="flex-1 obj-name">{{ oco.objective?.title }}</text>
-          <view class="obj-progress">
-            <view class="summit-progress">
+
+        <!-- 目标 + KR chips -->
+        <view class="cycle-objectives">
+          <view v-for="oco in summary.activeFocusCycle.objectives" :key="oco.objectiveId" class="cycle-obj">
+            <view class="cycle-obj-head" @click="goObjective(oco.objectiveId)">
+              <view class="status-dot" :style="{ background: oco.objective?.color || 'var(--summit-primary)' }" />
+              <text class="cycle-obj-title">{{ oco.objective?.title }}</text>
+              <text class="cycle-obj-percent" :style="{ color: oco.objective?.color }">
+                {{ Math.round((oco.objective?.currentProgress ?? 0) * 100) }}%
+              </text>
+            </view>
+            <view class="cycle-obj-bar">
               <view
-                class="summit-progress-inner"
-                :style="{ width: Math.round((oco.objective?.currentProgress ?? 0) * 100) + '%', background: 'var(--summit-success)' }"
+                class="cycle-obj-bar__fill"
+                :style="{ width: Math.round((oco.objective?.currentProgress ?? 0) * 100) + '%', background: oco.objective?.color || 'var(--summit-primary)' }"
               />
             </view>
+            <view class="kr-chips">
+              <view
+                v-for="kr in oco.objective?.keyResults ?? []"
+                :key="kr.id"
+                class="kr-chip"
+                :style="{ background: (oco.objective?.color || '#409eff') + '14', borderColor: (oco.objective?.color || '#409eff') + '55' }"
+                @click.stop="openRecordDialog(kr)"
+              >
+                <text class="kr-chip-title">{{ kr.emoji }} {{ kr.title }}</text>
+                <view class="kr-chip-foot">
+                  <text class="kr-chip-range">{{ kr.initialValue }} → {{ kr.targetValue }}</text>
+                  <text class="kr-chip-add">＋</text>
+                </view>
+              </view>
+            </view>
           </view>
-          <text class="obj-percent text-secondary text-small">
-            {{ Math.round((oco.objective?.currentProgress ?? 0) * 100) }}%
-          </text>
         </view>
       </view>
 
@@ -150,15 +199,41 @@
         <text class="empty-text">暂无数据</text>
       </view>
     </view>
+
+    <!-- KR 快捷记录弹层 -->
+    <wd-popup v-model="recordDialogVisible" position="bottom" custom-style="border-radius: 24rpx 24rpx 0 0;">
+      <view class="popup-form">
+        <text class="popup-title">添加记录 · {{ recordKr?.emoji }} {{ recordKr?.title }}</text>
+        <view class="form-item">
+          <text class="form-label">数值（{{ recordKr?.initialValue }} → {{ recordKr?.targetValue }}）</text>
+          <wd-input-number v-model="recordValue" :step="0.1" allow-negative />
+        </view>
+        <view class="form-item">
+          <text class="form-label">备注（可选）</text>
+          <wd-textarea v-model="recordNote" placeholder="记录说明" no-border custom-style="background: var(--summit-fill); border-radius: 24rpx; padding: 16rpx 20rpx" />
+        </view>
+        <view class="row" style="gap: 20rpx">
+          <wd-button block @click="recordDialogVisible = false">取消</wd-button>
+          <wd-button block type="primary" :loading="recordSubmitting" @click="submitRecord">添加</wd-button>
+        </view>
+      </view>
+    </wd-popup>
   </summit-page>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app';
-import type { SummaryData, CheckInStatus } from '@/types/api-types';
-import { summaryApi, checkinApi } from '@/api';
+import type { SummaryData, CheckInStatus, KeyResult } from '@/types/api-types';
+import { summaryApi, checkinApi, recordApi } from '@/api';
 import dayjs from 'dayjs';
+
+/** VisOKR 风格顶部统计行 */
+const statRow = [
+  { key: 'records', emoji: '📝', label: '今日添加记录', color: 'var(--summit-primary)' },
+  { key: 'progress', emoji: '🎯', label: '进行中目标', color: 'var(--summit-success)' },
+  { key: 'tasks', emoji: '🔔', label: '今日任务', color: 'var(--summit-danger)' },
+];
 
 const summary = ref<SummaryData | null>(null);
 const loading = ref(false);
@@ -227,6 +302,56 @@ function getKpiValue(key: string): number {
   return (summary.value as any)[key] ?? 0;
 }
 
+// ============ VisOKR 统计行取值 ============
+function getStatValue(key: string): number {
+  if (!summary.value) return 0;
+  if (key === 'records') return summary.value.todayAddedRecords ?? 0;
+  if (key === 'progress') return summary.value.inProgressObjectives;
+  return summary.value.todayTaskCount ?? summary.value.todayTasks.length;
+}
+
+// ============ 周期圆环 ============
+const cycleScore = computed(() => summary.value?.activeFocusCycle?.cycleScore ?? 0);
+
+const todayDelta = computed(() => {
+  const delta = summary.value?.todayProgressDelta;
+  if (delta == null) return '0';
+  return (delta * 100).toFixed(1).replace(/\.0$/, '');
+});
+
+// ============ KR 记录快捷添加 ============
+const recordDialogVisible = ref(false);
+const recordKr = ref<KeyResult | null>(null);
+const recordValue = ref(0);
+const recordNote = ref('');
+const recordSubmitting = ref(false);
+
+function openRecordDialog(kr: KeyResult) {
+  recordKr.value = kr;
+  recordValue.value = kr.currentValue ?? 0;
+  recordNote.value = '';
+  recordDialogVisible.value = true;
+}
+
+async function submitRecord() {
+  if (!recordKr.value || recordSubmitting.value) return;
+  recordSubmitting.value = true;
+  try {
+    await recordApi.create({
+      keyResultId: recordKr.value.id,
+      value: recordValue.value,
+      note: recordNote.value.trim() || undefined,
+    });
+    uni.showToast({ title: '记录已添加', icon: 'success' });
+    recordDialogVisible.value = false;
+    await loadSummary();
+  } catch {
+    // http 层已 toast
+  } finally {
+    recordSubmitting.value = false;
+  }
+}
+
 function goFocus() {
   uni.navigateTo({ url: '/pages/focus/focus' });
 }
@@ -234,9 +359,50 @@ function goFocus() {
 function goObjective(id: string) {
   uni.navigateTo({ url: '/pages/goals/objective-detail?id=' + id });
 }
+
+function goTasks() {
+  uni.switchTab({ url: '/pages/tasks/tasks' });
+}
 </script>
 
 <style scoped lang="scss">
+/* ============ VisOKR 统计行 ============ */
+.stat-row {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+  padding: 24rpx 16rpx;
+  background: var(--summit-card);
+  border: 1px solid var(--summit-border);
+  border-radius: 32rpx;
+  box-shadow: var(--summit-shadow);
+
+  .stat-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4rpx;
+
+    .stat-emoji {
+      font-size: 32rpx;
+      line-height: 1.2;
+    }
+
+    .stat-value {
+      font-size: 40rpx;
+      font-weight: 800;
+      color: var(--summit-text);
+      line-height: 1.2;
+    }
+
+    .stat-label {
+      font-size: 22rpx;
+      color: var(--summit-text-secondary);
+    }
+  }
+}
+
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -328,26 +494,219 @@ function goObjective(id: string) {
   }
 }
 
-.cycle-name {
-  font-size: 30rpx;
-  font-weight: 600;
-  color: var(--summit-text);
+/* ============ 专注周期（VisOKR 圆环 + KR chips） ============ */
+.cycle-card {
+  .cycle-name {
+    font-size: 30rpx;
+    font-weight: 600;
+    color: var(--summit-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cycle-period {
+    margin: -8rpx 0 20rpx;
+    font-size: 24rpx;
+    color: var(--summit-text-secondary);
+  }
+
+  .cycle-days {
+    margin-left: 12rpx;
+    padding: 2rpx 14rpx;
+    border-radius: 999rpx;
+    font-size: 22rpx;
+    font-weight: 600;
+    color: #fff;
+    background: var(--summit-success);
+
+    &.is-urgent {
+      background: var(--summit-danger);
+    }
+  }
 }
 
-.cycle-period {
-  margin-top: 4rpx;
+.cycle-body {
+  display: flex;
+  align-items: center;
+  gap: 28rpx;
+  margin-bottom: 24rpx;
 }
 
-.cycle-score-block {
+.cycle-ring {
+  position: relative;
+  width: 180rpx;
+  height: 180rpx;
+  flex-shrink: 0;
+
+  .cycle-ring__track {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    border-radius: 50%;
+    background: var(--summit-fill);
+  }
+
+  .cycle-ring__fill {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    border-radius: 50%;
+  }
+
+  .cycle-ring__inner {
+    position: absolute;
+    top: 20rpx;
+    right: 20rpx;
+    bottom: 20rpx;
+    left: 20rpx;
+    border-radius: 50%;
+    background: var(--summit-card);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .cycle-ring__value {
+    font-size: 44rpx;
+    font-weight: 800;
+    color: var(--summit-primary);
+    line-height: 1.1;
+  }
+
+  .cycle-ring__unit {
+    font-size: 22rpx;
+    font-weight: 600;
+  }
+
+  .cycle-ring__label {
+    font-size: 20rpx;
+    color: var(--summit-text-secondary);
+    margin-top: 4rpx;
+  }
+}
+
+.cycle-side {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  gap: 16rpx;
 
-  .cycle-score-value {
-    font-size: 44rpx;
+  .cycle-side-item {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .cycle-side-value {
+    font-size: 36rpx;
+    font-weight: 800;
+    color: var(--summit-text);
+    line-height: 1.2;
+  }
+
+  .cycle-side-unit {
+    font-size: 22rpx;
+    font-weight: 500;
+    color: var(--summit-text-secondary);
+    margin-left: 4rpx;
+  }
+
+  .cycle-side-label {
+    font-size: 22rpx;
+    color: var(--summit-text-secondary);
+  }
+}
+
+.cycle-objectives {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.cycle-obj-head {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 8rpx;
+
+  .cycle-obj-title {
+    flex: 1;
+    min-width: 0;
+    font-size: 28rpx;
+    font-weight: 600;
+    color: var(--summit-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cycle-obj-percent {
+    font-size: 26rpx;
+    font-weight: 700;
+  }
+}
+
+.cycle-obj-bar {
+  height: 10rpx;
+  border-radius: 999rpx;
+  background: var(--summit-fill);
+  overflow: hidden;
+  margin-bottom: 12rpx;
+
+  .cycle-obj-bar__fill {
+    height: 100%;
+    border-radius: 999rpx;
+    transition: width 0.3s ease;
+  }
+}
+
+.kr-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+
+  .kr-chip {
+    flex: 1 1 45%;
+    min-width: 0;
+    box-sizing: border-box;
+    border: 1rpx solid;
+    border-radius: 24rpx;
+    padding: 14rpx 16rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 6rpx;
+  }
+
+  .kr-chip-title {
+    font-size: 24rpx;
+    font-weight: 600;
+    color: var(--summit-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+  }
+
+  .kr-chip-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .kr-chip-range {
+    font-size: 22rpx;
+    color: var(--summit-text-secondary);
+  }
+
+  .kr-chip-add {
+    font-size: 28rpx;
     font-weight: 700;
     color: var(--summit-primary);
-    line-height: 1.2;
   }
 }
 

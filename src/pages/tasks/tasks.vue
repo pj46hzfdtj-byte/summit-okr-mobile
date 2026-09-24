@@ -21,6 +21,33 @@
         </view>
       </view>
 
+      <!-- 横向周日期条（VisOKR 风格） -->
+      <view class="week-strip-card">
+        <view class="week-strip-header">
+          <text class="ws-arrow" @click="prevWeek">‹</text>
+          <text class="week-label">{{ weekLabel }}</text>
+          <text class="ws-arrow" @click="nextWeek">›</text>
+          <text class="ws-today" @click="goToday">回到今天</text>
+        </view>
+        <view class="week-strip">
+          <view
+            v-for="d in weekStrip"
+            :key="d.dateStr"
+            class="week-day"
+            :class="{ 'is-today': d.isToday, 'is-selected': d.isSelected, 'all-done': d.count > 0 && d.completed === d.count }"
+            @click="selectDay(d.dateStr)"
+          >
+            <text class="wd-weekday">{{ d.weekday }}</text>
+            <text class="wd-num">{{ d.dayNum }}</text>
+            <view class="wd-dots">
+              <view v-if="d.count > 0" class="wd-dot" :class="{ 'dot-done': d.completed === d.count }" />
+              <view v-else class="wd-dot wd-dot-empty" />
+            </view>
+            <text v-if="d.count > 0" class="wd-count">{{ d.completed }}/{{ d.count }}</text>
+          </view>
+        </view>
+      </view>
+
       <!-- 月历 -->
       <view class="summit-card" style="padding: 16rpx">
         <view class="weekday-row">
@@ -71,7 +98,7 @@
           <view class="summit-btn btn-small" style="margin-top: 24rpx" @click="openDialog(selectedDate)">添加任务</view>
         </view>
 
-        <view v-for="task in selectedDayTasks" :key="task.id" class="task-item" :class="{ 'is-overdue': isOverdue(task) }">
+        <view v-for="task in selectedDayTasks" :key="task.id" class="task-item" :class="{ 'is-overdue': isOverdue(task), 'is-completed': task.status === 'completed' }">
           <view
             class="task-check"
             :class="{ 'is-done': multiSelect ? selectedIds.includes(task.id) : task.status === 'completed' }"
@@ -99,7 +126,7 @@
     </view>
 
     <!-- 新建任务弹层 -->
-    <wd-popup v-model="dialogVisible" position="bottom" custom-style="border-radius: 24rpx 24rpx 0 0;">
+    <wd-popup v-model="dialogVisible" position="bottom" :z-index="1000" custom-style="border-radius: 24rpx 24rpx 0 0;">
       <view class="popup-form">
         <text class="popup-title">新建任务</text>
         <view class="form-item">
@@ -132,6 +159,22 @@
         </view>
       </view>
     </wd-popup>
+
+    <!-- 浮动加号（VisOKR 风格） -->
+    <view v-if="!dialogVisible" class="task-fab" @click="openDialog(selectedDate)">
+      <text class="task-fab-icon">＋</text>
+    </view>
+
+    <!-- 完成庆祝提示（VisOKR 风格） -->
+    <view v-if="celebrate.show" class="celebrate-toast">
+      <text class="celebrate-emoji">🎉</text>
+      <view class="celebrate-text">
+        <text class="celebrate-title">{{ celebrate.title }}</text>
+        <text v-if="celebrate.sub" class="celebrate-sub">
+          {{ celebrate.sub }}{{ celebrate.pct ? ` · ${celebrate.pct}` : '' }}
+        </text>
+      </view>
+    </view>
   </summit-page>
 </template>
 
@@ -181,8 +224,84 @@ function nextMonth() {
   currentMonth.value = currentMonth.value.add(1, 'month');
 }
 function goToday() {
-  currentMonth.value = dayjs();
-  selectedDate.value = dayjs().format('YYYY-MM-DD');
+  const today = dayjs();
+  selectedDate.value = today.format('YYYY-MM-DD');
+  currentMonth.value = today;
+  weekAnchor.value = mondayOfWeek(today);
+}
+
+// ============ 横向周日期条（VisOKR 风格） ============
+function mondayOfWeek(d: dayjs.Dayjs) {
+  const dow = d.day();
+  return d.subtract(dow === 0 ? 6 : dow - 1, 'day');
+}
+
+const weekAnchor = ref(mondayOfWeek(dayjs()));
+
+const weekLabel = computed(() => {
+  const start = weekAnchor.value;
+  const end = start.add(6, 'day');
+  return `${start.format('M月D日')} - ${end.format('M月D日')}`;
+});
+
+const weekStrip = computed(() => {
+  const labels = ['一', '二', '三', '四', '五', '六', '日'];
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = weekAnchor.value.add(i, 'day');
+    const dateStr = d.format('YYYY-MM-DD');
+    const list = tasksOn(dateStr);
+    return {
+      dateStr,
+      weekday: labels[i],
+      dayNum: d.date(),
+      isToday: d.isSame(dayjs(), 'day'),
+      isSelected: dateStr === selectedDate.value,
+      count: list.length,
+      completed: list.filter((t) => t.status === 'completed').length,
+    };
+  });
+});
+
+function selectDay(dateStr: string) {
+  selectedDate.value = dateStr;
+  const d = dayjs(dateStr);
+  currentMonth.value = d;
+  const start = weekAnchor.value;
+  const end = start.add(6, 'day');
+  if (d.isBefore(start, 'day') || d.isAfter(end, 'day')) {
+    weekAnchor.value = mondayOfWeek(d);
+  }
+}
+
+function prevWeek() {
+  weekAnchor.value = weekAnchor.value.subtract(7, 'day');
+}
+function nextWeek() {
+  weekAnchor.value = weekAnchor.value.add(7, 'day');
+}
+
+// ============ 完成庆祝提示（VisOKR 风格） ============
+const celebrate = ref({ show: false, title: '', sub: '', pct: '' });
+let celebrateTimer: ReturnType<typeof setTimeout> | null = null;
+
+const celebrateMessages = [
+  '又近了一步，继续加油！',
+  '坚持就是胜利！',
+  '今天的努力看得见！',
+  '离目标更近了！',
+  '太棒了，保持节奏！',
+];
+
+function triggerCelebrate(task: Task) {
+  const obj = task.objectiveId ? objectives.value.find((o) => o.id === task.objectiveId) : null;
+  const sub = obj?.title ?? '';
+  const pct = obj?.currentProgress != null ? `${Math.round(obj.currentProgress * 100)}%` : '';
+  const msg = celebrateMessages[Math.floor(Math.random() * celebrateMessages.length)];
+  celebrate.value = { show: true, title: msg, sub, pct };
+  if (celebrateTimer) clearTimeout(celebrateTimer);
+  celebrateTimer = setTimeout(() => {
+    celebrate.value = { ...celebrate.value, show: false };
+  }, 2600);
 }
 
 function tasksOn(dateStr: string): Task[] {
@@ -380,7 +499,9 @@ async function toggleTask(task: Task) {
     return;
   }
   await taskApi.complete(task.id, task.status === 'pending');
+  const done = task.status === 'pending';
   await loadTasks();
+  if (done) triggerCelebrate(task);
   if (task.status === 'pending' && task.repeatRule && task.repeatRule !== 'none') {
     uni.showToast({ title: `已完成，已生成下一个${repeatLabel.value[task.repeatRule] ?? ''}任务`, icon: 'none' });
   }
@@ -402,6 +523,115 @@ function handleDelete(task: Task) {
 </script>
 
 <style scoped lang="scss">
+/* ============ 横向周日期条（VisOKR 风格） ============ */
+.week-strip-card {
+  margin-bottom: 20rpx;
+  padding: 16rpx 12rpx 20rpx;
+  background: var(--summit-card);
+  border: 1px solid var(--summit-border);
+  border-radius: 32rpx;
+  box-shadow: var(--summit-shadow);
+}
+
+.week-strip-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
+
+  .ws-arrow {
+    font-size: 36rpx;
+    color: var(--summit-text-secondary);
+    padding: 0 16rpx;
+    line-height: 1;
+  }
+
+  .week-label {
+    font-size: 28rpx;
+    font-weight: 600;
+    color: var(--summit-text);
+    min-width: 220rpx;
+    text-align: center;
+  }
+
+  .ws-today {
+    font-size: 26rpx;
+    color: var(--summit-primary);
+    font-weight: 600;
+    padding: 0 16rpx;
+  }
+}
+
+.week-strip {
+  display: flex;
+  gap: 8rpx;
+}
+
+.week-day {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4rpx;
+  padding: 12rpx 0;
+  border-radius: 12rpx;
+  border: 2rpx solid transparent;
+  transition: background-color 0.2s ease;
+
+  &.is-today {
+    background: var(--summit-primary-light);
+    border-color: var(--summit-primary);
+  }
+
+  &.is-selected {
+    border-color: var(--summit-primary);
+  }
+
+  &.all-done {
+    background: rgba(103, 194, 58, 0.12);
+
+    .wd-num {
+      color: var(--summit-success);
+    }
+  }
+
+  .wd-weekday {
+    font-size: 22rpx;
+    color: var(--summit-text-secondary);
+  }
+
+  .wd-num {
+    font-size: 32rpx;
+    font-weight: 700;
+    color: var(--summit-text);
+    line-height: 1.2;
+  }
+
+  .wd-dots {
+    height: 14rpx;
+    display: flex;
+    align-items: center;
+  }
+
+  .wd-dot {
+    width: 10rpx;
+    height: 10rpx;
+    border-radius: 50%;
+    background: var(--summit-primary);
+
+    &.dot-done {
+      background: var(--summit-success);
+    }
+  }
+
+  .wd-count {
+    font-size: 18rpx;
+    color: var(--summit-text-secondary);
+    line-height: 1.2;
+  }
+}
+
 .toolbar {
   display: flex;
   align-items: center;
@@ -538,6 +768,10 @@ function handleDelete(task: Task) {
     border-left: 6rpx solid var(--summit-danger);
     padding-left: 12rpx;
   }
+
+  &.is-completed {
+    background: rgba(5, 150, 105, 0.1);
+  }
 }
 
 .task-check {
@@ -586,5 +820,73 @@ function handleDelete(task: Task) {
   display: flex;
   gap: 8rpx;
   flex-wrap: wrap;
+}
+
+/* ============ 浮动加号 ============ */
+.task-fab {
+  position: fixed;
+  right: 32rpx;
+  bottom: calc(120rpx + env(safe-area-inset-bottom));
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50%;
+  background: var(--summit-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.22);
+  z-index: 999;
+  transition: opacity 0.2s ease;
+
+  &:active {
+    opacity: 0.8;
+  }
+
+  .task-fab-icon {
+    font-size: 56rpx;
+    color: #fff;
+    line-height: 1;
+    font-weight: 300;
+  }
+}
+
+/* ============ 完成庆祝提示 ============ */
+.celebrate-toast {
+  position: fixed;
+  top: 120rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  background: var(--summit-card);
+  border: 1px solid var(--summit-success);
+  border-radius: 24rpx;
+  padding: 20rpx 32rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.16);
+  z-index: 1100;
+  max-width: 80vw;
+
+  .celebrate-emoji {
+    font-size: 48rpx;
+    line-height: 1;
+  }
+
+  .celebrate-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4rpx;
+  }
+
+  .celebrate-title {
+    font-size: 28rpx;
+    font-weight: 700;
+    color: var(--summit-success);
+  }
+
+  .celebrate-sub {
+    font-size: 22rpx;
+    color: var(--summit-text-secondary);
+  }
 }
 </style>

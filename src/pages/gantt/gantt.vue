@@ -11,6 +11,20 @@
 
       <wd-loading v-if="loading" style="display: flex; justify-content: center; padding: 120rpx 0" />
 
+      <!-- 状态过滤 Tab（VisOKR 风格） -->
+      <view v-if="!loading && items.length" class="status-tabs">
+        <text
+          v-for="tab in statusTabs"
+          :key="tab.key"
+          class="status-tab"
+          :class="{ 'is-active': statusFilter === tab.key }"
+          @click="statusFilter = tab.key"
+        >
+          {{ tab.label }}
+          <text class="tab-count">{{ statusCounts[tab.key] }}</text>
+        </text>
+      </view>
+
       <view v-else-if="!items.length" class="summit-empty">
         <text class="empty-icon">📊</text>
         <text class="empty-text">{{ scope === 'cycle' ? '当前专注周期内没有已计划的目标' : '还没有带计划时间的目标，去目标库创建吧' }}</text>
@@ -34,12 +48,12 @@
         </view>
 
         <!-- 目标列表（条形点击的兜底入口） -->
-        <view class="summit-card">
+        <view v-if="filteredItems.length" class="summit-card">
           <view class="card-title">
-            <text>目标列表 ({{ items.length }})</text>
+            <text>目标列表 ({{ filteredItems.length }})</text>
             <text class="text-secondary text-small">点击查看目标详情</text>
           </view>
-          <view v-for="item in items" :key="item.id" class="list-row" @click="goDetail(item.id)">
+          <view v-for="item in filteredItems" :key="item.id" class="list-row" @click="goDetail(item.id)">
             <view class="g-dot" :style="{ background: item.isLagging ? 'var(--summit-danger)' : item.color }" />
             <view class="flex-1">
               <view class="row" style="gap: 12rpx; flex-wrap: wrap">
@@ -74,6 +88,36 @@ const scope = ref<'all' | 'cycle'>('all');
 
 const items = computed<GanttItem[]>(() => ganttData.value?.items ?? []);
 
+// ============ 状态过滤 Tab（VisOKR 风格） ============
+const statusFilter = ref<'all' | 'active' | 'lagging' | 'completed'>('all');
+
+const statusTabs = [
+  { key: 'all' as const, label: '全部' },
+  { key: 'active' as const, label: '进行中' },
+  { key: 'lagging' as const, label: '滞后' },
+  { key: 'completed' as const, label: '已完成' },
+];
+
+const statusCounts = computed(() => ({
+  all: items.value.length,
+  active: items.value.filter((i) => i.status === 'in_progress' || i.status === 'pending_review').length,
+  lagging: items.value.filter((i) => i.isLagging).length,
+  completed: items.value.filter((i) => i.status === 'completed').length,
+}));
+
+const filteredItems = computed<GanttItem[]>(() => {
+  switch (statusFilter.value) {
+    case 'active':
+      return items.value.filter((i) => i.status === 'in_progress' || i.status === 'pending_review');
+    case 'lagging':
+      return items.value.filter((i) => i.isLagging);
+    case 'completed':
+      return items.value.filter((i) => i.status === 'completed');
+    default:
+      return items.value;
+  }
+});
+
 async function loadGantt() {
   loading.value = true;
   try {
@@ -91,14 +135,14 @@ function goDetail(id: string) {
 
 /** 点击条形跳转到目标详情 */
 function onChartClick(e: any) {
-  const item = ganttData.value?.items?.[e?.dataIndex];
+  const item = filteredItems.value[e?.dataIndex];
   if (item) goDetail(item.id);
 }
 
 const chartOption = computed(() => {
   const data = ganttData.value;
-  if (!data || !data.items.length) return {};
-  const list = data.items;
+  const list = filteredItems.value;
+  if (!data || !list.length) return {};
   const today = dayjs(data.todayLine);
 
   // 估算最长标题的像素宽度（CJK ≈12px/字，拉丁 ≈7px），用于给右侧文字预留时间缓冲
@@ -264,6 +308,37 @@ const chartOption = computed(() => {
 </script>
 
 <style scoped lang="scss">
+/* ============ 状态过滤胶囊 Tab（VisOKR 风格） ============ */
+.status-tabs {
+  display: flex;
+  gap: 12rpx;
+  margin-bottom: 20rpx;
+}
+
+.status-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 12rpx 24rpx;
+  font-size: 24rpx;
+  color: var(--summit-text-secondary);
+  background: var(--summit-card);
+  border: 1px solid var(--summit-border);
+  border-radius: 999rpx;
+
+  &.is-active {
+    color: #fff;
+    background: var(--summit-primary);
+    border-color: var(--summit-primary);
+    font-weight: 600;
+  }
+
+  .tab-count {
+    font-size: 20rpx;
+    opacity: 0.8;
+  }
+}
+
 .gantt-legend {
   display: flex;
   flex-wrap: wrap;

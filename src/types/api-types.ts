@@ -136,6 +136,10 @@ export interface GoalGroup {
   children?: GoalGroup[];
   objectives?: Objective[];
   vision?: Vision | null;
+  /** 派生：子树目标总数 */
+  objectiveCount?: number;
+  /** 派生：子树目标平均进度 0-1 */
+  progress?: number;
 }
 
 export interface CreateGoalGroupDto {
@@ -478,6 +482,16 @@ export interface SummaryData {
   laggingObjectives: Objective[];
   todayTasks: Task[];
   randomMotivation: string | null;
+  /** 今日新增记录数 */
+  todayAddedRecords?: number;
+  /** 今日任务总数（含已完成） */
+  todayTaskCount?: number;
+  /** 活跃周期剩余天数（无周期时 null） */
+  cycleDaysRemaining?: number | null;
+  /** 活跃周期时间进度 0-1 */
+  cycleTimeProgress?: number | null;
+  /** 今日整体进度增量（因今日记录带来的平均完成度提升，0-1） */
+  todayProgressDelta?: number | null;
 }
 
 // ============ 甘特图（Gantt） ============

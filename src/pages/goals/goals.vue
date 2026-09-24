@@ -42,6 +42,16 @@
                 </text>
                 <text v-if="node.objectives?.length" class="obj-count">{{ node.objectives.length }}</text>
               </view>
+              <!-- 迷你进度条（VisOKR 风格） -->
+              <view v-if="(node.progress ?? 0) > 0" class="node-progress">
+                <view class="node-progress__track">
+                  <view
+                    class="node-progress__fill"
+                    :style="{ width: Math.round(Math.min(1, node.progress ?? 0) * 100) + '%', background: node.color }"
+                  />
+                </view>
+                <text class="node-progress__pct">{{ Math.round((node.progress ?? 0) * 100) }}%</text>
+              </view>
             </view>
 
             <view class="node-actions">
@@ -469,6 +479,36 @@ async function handleCreateObjective() {
   background: var(--summit-fill);
   padding: 2rpx 14rpx;
   border-radius: 999rpx;
+}
+
+/* 迷你进度条（VisOKR 风格） */
+.node-progress {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 10rpx;
+  padding-left: 30rpx;
+
+  &__track {
+    flex: 1;
+    height: 10rpx;
+    border-radius: 5rpx;
+    background: var(--summit-fill);
+    overflow: hidden;
+  }
+
+  &__fill {
+    height: 100%;
+    border-radius: 5rpx;
+    transition: width 0.3s ease;
+  }
+
+  &__pct {
+    font-size: 22rpx;
+    font-weight: 600;
+    color: var(--summit-text-secondary);
+    flex-shrink: 0;
+  }
 }
 
 .node-actions {
